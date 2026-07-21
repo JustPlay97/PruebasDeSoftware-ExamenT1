@@ -1,5 +1,9 @@
 package edu.pe.cibertec.taller.servicio;
 
+import edu.pe.cibertec.taller.modelo.Cita;
+import edu.pe.cibertec.taller.modelo.EstadoCita;
+import edu.pe.cibertec.taller.modelo.Mecanico;
+import edu.pe.cibertec.taller.modelo.TipoServicio;
 import edu.pe.cibertec.taller.repositorio.RepositorioCitas;
 import edu.pe.cibertec.taller.repositorio.RepositorioMecanicos;
 import edu.pe.cibertec.taller.servicio.impl.ServicioCitasImpl;
@@ -11,6 +15,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.Optional;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ServicioCitasImplTest {
@@ -34,19 +47,35 @@ class ServicioCitasImplTest {
 		servicioCitas = new ServicioCitasImpl(repositorioMecanicos, repositorioCitas,
 				proveedorFechaHora, servicioNotificaciones);
 		// TODO: crear aqui los datos comunes que necesiten los tests
+        when(proveedorFechaHora.ahora()).thenReturn(LocalDateTime.of(2026, 9, 17, 8, 0));
 	}
 
 	@Test
 	@DisplayName("Agendar una cita valida la guarda, notifica y la retorna en estado PROGRAMADA")
 	void agendarCitaExitosa() {
-		// Arrange
-		// TODO
+        // Arrange
+        String placa = "RAM-778";
+        Long mecanicoId = 1L;
+        LocalDateTime fechaCita = LocalDateTime.of(2026, 9, 18, 10, 0);
+        TipoServicio tipoServicio = TipoServicio.CAMBIO_ACEITE;
 
-		// Act
-		// TODO
+        Mecanico mecanico = new Mecanico(mecanicoId,"Luis Ramos", TipoServicio.CAMBIO_ACEITE);
 
-		// Assert
-		// TODO: verificar estado, duracion, save y notificacion
+        when(repositorioMecanicos.findById(mecanicoId)).thenReturn(Optional.of(mecanico));
+        when(repositorioCitas.findByMecanicoIdAndEstado(mecanicoId, EstadoCita.PROGRAMADA)).thenReturn(Collections.emptyList());
+        when(repositorioCitas.<Cita>save(any(Cita.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0, Cita.class));
+
+        // Act
+        Cita citaCreada = servicioCitas.agendarCita(mecanicoId,placa, tipoServicio, fechaCita);
+
+        // Assert
+        assertNotNull(citaCreada);
+        assertEquals(EstadoCita.PROGRAMADA, citaCreada.getEstado());
+        assertEquals(TipoServicio.CAMBIO_ACEITE.getDuracionHoras(), citaCreada.getDuracionHoras());
+
+        verify(repositorioCitas).save(any(Cita.class));
+        verify(servicioNotificaciones).notificarCitaAgendada(any(Cita.class));
 	}
 
 	@Test
