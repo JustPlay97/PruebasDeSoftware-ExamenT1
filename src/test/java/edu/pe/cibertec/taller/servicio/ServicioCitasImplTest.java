@@ -1,12 +1,10 @@
 package edu.pe.cibertec.taller.servicio;
 
+import edu.pe.cibertec.taller.excepcion.CitaNoCancelableException;
 import edu.pe.cibertec.taller.excepcion.EspecialidadIncorrectaException;
 import edu.pe.cibertec.taller.excepcion.HorarioNoPermitidoException;
 import edu.pe.cibertec.taller.excepcion.MecanicoNoEncontradoException;
-import edu.pe.cibertec.taller.modelo.Cita;
-import edu.pe.cibertec.taller.modelo.EstadoCita;
-import edu.pe.cibertec.taller.modelo.Mecanico;
-import edu.pe.cibertec.taller.modelo.TipoServicio;
+import edu.pe.cibertec.taller.modelo.*;
 import edu.pe.cibertec.taller.repositorio.RepositorioCitas;
 import edu.pe.cibertec.taller.repositorio.RepositorioMecanicos;
 import edu.pe.cibertec.taller.servicio.impl.ServicioCitasImpl;
@@ -278,12 +276,32 @@ class ServicioCitasImplTest {
 	void cancelarConAnticipacionSuficiente() {
 		// Arrange
 		// TODO
+        Long citaId = 100L;
+        LocalDateTime fechaCita = LocalDateTime.of(2026, 9, 18, 10, 0);
+        when(proveedorFechaHora.ahora()).thenReturn(LocalDateTime.of(2026, 9, 17, 10, 0));
+        Cita cita = new Cita();
+        cita.setId(citaId);
+        cita.setPlacaVehiculo("RAM-778");
+        cita.setTipoServicio(TipoServicio.CAMBIO_ACEITE);
+        cita.setFechaHoraInicio(fechaCita);
+        cita.setEstado(EstadoCita.PROGRAMADA);
+
+        when(repositorioCitas.findById(citaId)).thenReturn(Optional.of(cita));
+        when(repositorioCitas.<Cita>save(any(Cita.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0, Cita.class));
 
 		// Act
 		// TODO
+        ResultadoCancelacion resultado = servicioCitas.cancelarCita(citaId);
 
 		// Assert
 		// TODO: penalidad 0, estado CANCELADA, notificacion
+        assertNotNull(resultado);
+        assertEquals(0.0, resultado.getMontoPenalidad());
+        assertEquals(EstadoCita.CANCELADA, cita.getEstado());
+
+        verify(repositorioCitas).save(cita);
+        verify(servicioNotificaciones).notificarCitaCancelada(any(Cita.class));
 	}
 
 	@Test
@@ -291,13 +309,58 @@ class ServicioCitasImplTest {
 	void cancelarConAvisoTardio() {
 		// Arrange
 		// TODO
+        Long citaId = 101L;
+        LocalDateTime fechaCita = LocalDateTime.of(2026, 9, 18, 10, 0);
+        when(proveedorFechaHora.ahora()).thenReturn(LocalDateTime.of(2026, 9, 18, 8, 0));
+
+        Cita cita = new Cita();
+        cita.setId(citaId);
+        cita.setPlacaVehiculo("RAM-778");
+        cita.setTipoServicio(TipoServicio.CAMBIO_ACEITE);
+        cita.setFechaHoraInicio(fechaCita);
+        cita.setEstado(EstadoCita.PROGRAMADA);
+
+        when(repositorioCitas.findById(citaId)).thenReturn(Optional.of(cita));
+        when(repositorioCitas.<Cita>save(any(Cita.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0, Cita.class));
 
 		// Act
 		// TODO
+        ResultadoCancelacion resultado = servicioCitas.cancelarCita(citaId);
 
 		// Assert
 		// TODO
+        assertNotNull(resultado);
+        assertEquals(50.0, resultado.getMontoPenalidad());
+        assertEquals(EstadoCita.CANCELADA, cita.getEstado());
+
+        verify(repositorioCitas).save(cita);
+        verify(servicioNotificaciones).notificarCitaCancelada(any(Cita.class));
 	}
+
+    @Test
+    @DisplayName("Intentar cancelar una cita ya atendida lanza CitaNoCancelableException")
+    void cancelarCitaAtendidaLanzaExcepcion() {
+        // Arrange
+        Long citaId = 102L;
+
+        Cita cita = new Cita();
+        cita.setId(citaId);
+        cita.setPlacaVehiculo("RAM-778");
+        cita.setTipoServicio(TipoServicio.CAMBIO_ACEITE);
+        cita.setFechaHoraInicio(LocalDateTime.of(2026, 9, 18, 10, 0));
+        cita.setEstado(EstadoCita.ATENDIDA); // Cita ya atendida / completada
+
+        when(repositorioCitas.findById(citaId)).thenReturn(Optional.of(cita));
+
+        // Act y Assert
+        assertThrows(CitaNoCancelableException.class, () ->
+                servicioCitas.cancelarCita(citaId)
+        );
+
+        verify(repositorioCitas, never()).save(any(Cita.class));
+        verify(servicioNotificaciones, never()).notificarCitaCancelada(any(Cita.class));
+    }
 
 	@Test
 	@DisplayName("Cancelar una cita inexistente lanza CitaNoEncontradaException")
