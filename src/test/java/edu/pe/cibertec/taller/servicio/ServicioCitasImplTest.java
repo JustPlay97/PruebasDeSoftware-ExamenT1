@@ -50,6 +50,7 @@ class ServicioCitasImplTest {
 
 	}
 
+    //TESTS PARA LA PREGUNTA 1
 	@Test
 	@DisplayName("Agendar una cita valida la guarda, notifica y la retorna en estado PROGRAMADA")
 	void agendarCitaExitosa() {
@@ -125,6 +126,7 @@ class ServicioCitasImplTest {
         verify(servicioNotificaciones, never()).notificarCitaAgendada(any(Cita.class));
 	}
 
+    //TESTS PARA LA PREGUNTA 2
 	@Test
 	@DisplayName("Un servicio pesado a las 7:00 se rechaza con HorarioNoPermitidoException")
 	void agendarServicioALas7() {
@@ -237,40 +239,7 @@ class ServicioCitasImplTest {
         verify(servicioNotificaciones, never()).notificarCitaAgendada(any(Cita.class));
     }
 
-
-    @Test
-	@DisplayName("Agendar en una fecha del pasado lanza FechaInvalidaException")
-	void agendarConFechaEnElPasado() {
-		// Arrange
-		// TODO: recuerden mockear proveedorFechaHora.ahora()
-
-		// Act y Assert
-		// TODO
-	}
-
-	@Test
-	@DisplayName("Agendar sobre una cita ya programada se rechaza con HorarioOcupadoException")
-	void agendarConSuperposicion() {
-		// Arrange
-		// TODO
-
-		// Act y Assert
-		// TODO
-	}
-
-	@Test
-	@DisplayName("Una cita que empieza justo cuando termina otra se acepta")
-	void agendarCitaContigua() {
-		// Arrange
-		// TODO: una cita existente que termina a las 10:00 y la nueva que empieza a las 10:00
-
-		// Act
-		// TODO
-
-		// Assert
-		// TODO
-	}
-
+    //TESTS PARA LA PREGUNTA 3
 	@Test
 	@DisplayName("Cancelar con 24 horas o mas de anticipacion no genera penalidad")
 	void cancelarConAnticipacionSuficiente() {
@@ -362,46 +331,4 @@ class ServicioCitasImplTest {
         verify(servicioNotificaciones, never()).notificarCitaCancelada(any(Cita.class));
     }
 
-	@Test
-	@DisplayName("Cancelar una cita inexistente lanza CitaNoEncontradaException")
-	void cancelarCitaInexistente() {
-		// Arrange
-		// TODO
-
-		// Act y Assert
-		// TODO
-	}
-
-	@Test
-	@DisplayName("Cancelar una cita que ya fue cancelada lanza CitaNoCancelableException")
-	void cancelarCitaYaCancelada() {
-		// Arrange
-		// TODO
-
-		// Act y Assert
-		// TODO
-	}
-
-	@Test
-	@DisplayName("Buscar mecanico disponible retorna el primero sin citas superpuestas")
-	void buscarMecanicoDisponibleRetornaPrimeroLibre() {
-		// Arrange
-		// TODO: dos mecanicos de la misma especialidad, el primero ocupado
-
-		// Act
-		// TODO
-
-		// Assert
-		// TODO
-	}
-
-	@Test
-	@DisplayName("Buscar mecanico cuando ninguno esta libre lanza SinDisponibilidadException")
-	void buscarMecanicoSinDisponibilidad() {
-		// Arrange
-		// TODO
-
-		// Act y Assert
-		// TODO
-	}
 }
